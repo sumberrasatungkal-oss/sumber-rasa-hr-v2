@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SR HR — Sumber Rasa (Cloud)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #22263a;
+    --border: #2e3250;
+    --accent: #4f8ef7;
+    --accent2: #7c5cfc;
+    --green: #22c55e;
+    --red: #ef4444;
+    --yellow: #f59e0b;
+    --text: #e8eaf6;
+    --muted: #7b82a8;
+    --card: #1e2235;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  #loadingScreen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 14px; z-index: 9999;
+  }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loadingScreen .ltext { font-size: 13px; color: var(--muted); }
+
+  #loginScreen { min-height: 100vh; display: none; align-items: center; justify-content: center; background: radial-gradient(ellipse at 30% 20%, #1a2456 0%, var(--bg) 60%); padding: 20px; }
+  .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 40px 36px; width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .login-logo { text-align: center; margin-bottom: 28px; }
+  .login-logo .brand { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .login-logo .brand span { color: var(--accent); }
+  .login-logo .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .login-box h2 { font-size: 16px; font-weight: 600; margin-bottom: 20px; color: var(--text); }
+
+  input, select, textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; color: var(--text); font-size: 14px;
+    font-family: inherit; outline: none; transition: border 0.2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .field { margin-bottom: 14px; }
+  .field label { font-size: 12px; color: var(--muted); margin-bottom: 5px; display: block; font-weight: 500; }
+  .pass-wrap { position: relative; }
+  .pass-wrap input { padding-right: 42px; }
+  .pass-toggle {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; cursor: pointer; padding: 6px 8px;
+    color: var(--muted); font-size: 16px; line-height: 1;
+  }
+  .pass-toggle:hover { color: var(--accent); }
+
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 18px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; transition: all 0.15s; font-family: inherit; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; width: 100%; padding: 12px; }
+  .btn-primary:hover { background: #3a7ae8; }
+  .btn-success { background: var(--green); color: #fff; }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-ghost { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 7px; }
+  .btn-accent2 { background: var(--accent2); color: #fff; }
+
+  .login-err { color: var(--red); font-size: 12px; margin-top: 8px; text-align: center; display: none; }
+
+  #appShell { display: none; }
+  .topbar { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { font-size: 16px; font-weight: 700; }
+  .topbar-brand span { color: var(--accent); }
+  .topbar-user { display: flex; align-items: center; gap: 10px; }
+  .topbar-user .user-badge { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 12px; color: var(--muted); }
+  .topbar-user .user-badge b { color: var(--text); }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 5px; }
+  .sync-dot.off { background: var(--red); }
+
+  .nav-tabs { background: var(--surface); border-bottom: 1px solid var(--border); display: flex; overflow-x: auto; padding: 0 16px; gap: 0; }
+  .nav-tab { padding: 12px 16px; font-size: 13px; font-weight: 500; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; transition: all 0.15s; }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .nav-tab:hover { color: var(--text); }
+
+  .main { padding: 20px 16px; max-width: 900px; margin: 0 auto; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 18px; margin-bottom: 16px; }
+  .card-title { font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 14px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 16px; }
+  .stat-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .stat-card .stat-label { font-size: 11px; color: var(--muted); font-weight: 500; margin-bottom: 4px; }
+  .stat-card .stat-val { font-size: 22px; font-weight: 700; color: var(--text); }
+  .stat-card .stat-val.green { color: var(--green); }
+  .stat-card .stat-val.yellow { color: var(--yellow); }
+  .stat-card .stat-val.red { color: var(--red); }
+
+  .badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-pending { background: rgba(245,158,11,0.15); color: var(--yellow); }
+  .badge-approved { background: rgba(34,197,94,0.15); color: var(--green); }
+  .badge-rejected { background: rgba(239,68,68,0.15); color: var(--red); }
+  .badge-active { background: rgba(79,142,247,0.15); color: var(--accent); }
+  .badge-lunas { background: rgba(34,197,94,0.1); color: var(--green); }
+  .badge-free { background: rgba(34,197,94,0.15); color: var(--green); }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center; padding: 20px; overflow-y: auto; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 24px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; margin: auto; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .modal-title { font-size: 16px; font-weight: 700; }
+  .modal-close { background: none; border: none; color: var(--muted); font-size: 20px; cursor: pointer; padding: 4px; }
+  .modal-close:hover { color: var(--text); }
+
+  .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+  .section-title { font-size: 16px; font-weight: 700; }
+
+  .emp-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; flex-wrap: wrap; gap: 8px; }
+  .emp-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0; }
+  .emp-info { flex: 1; margin-left: 12px; min-width: 150px; }
+  .emp-name { font-size: 14px; font-weight: 600; }
+  .emp-id { font-size: 11px; color: var(--muted); margin-top: 1px; }
+  .emp-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+  .loan-item { padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+  .loan-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+  .loan-name { font-weight: 600; font-size: 14px; }
+  .loan-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .progress-bar { height: 5px; background: var(--border); border-radius: 10px; margin-top: 8px; }
+  .progress-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.3s; }
+
+  .notice { background: rgba(79,142,247,0.08); border: 1px solid rgba(79,142,247,0.2); border-radius: 10px; padding: 12px 14px; font-size: 13px; color: var(--muted); }
+  .notice b { color: var(--accent); }
+  .notice.warn { background: rgba(245,158,11,0.08); border-color: rgba(245,158,11,0.2); }
+  .notice.warn b { color: var(--yellow); }
+
+  .slip-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .slip-row:last-child { border-bottom: none; }
+  .slip-row.total { font-weight: 700; font-size: 16px; color: var(--green); padding-top: 12px; }
+  .slip-row.deduct { color: var(--red); }
+  .slip-row.add { color: var(--green); }
+  .slip-label { color: var(--muted); font-size: 13px; }
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+  .month-bar { display: flex; gap: 8px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; }
+  .month-bar select { width: auto; flex: 1; min-width: 120px; }
+
+  .empty { text-align: center; padding: 32px 0; color: var(--muted); font-size: 13px; }
+  .leave-dates { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .leave-date-tag { background: rgba(245,158,11,0.12); color: var(--yellow); border-radius: 6px; padding: 2px 8px; font-size: 11px; font-weight: 500; }
+
+  .emp-dash-header { text-align: center; padding: 20px 0 10px; }
+  .emp-dash-header .greet { font-size: 12px; color: var(--muted); }
+  .emp-dash-header .name { font-size: 22px; font-weight: 700; margin-top: 2px; }
+  .emp-dash-header .emp-id-badge { display: inline-block; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 3px 12px; font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  .req-item { padding: 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+  .req-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .req-type { font-size: 13px; font-weight: 600; }
+  .req-detail { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* CALENDAR */
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 10px; }
+  .cal-dow { text-align: center; font-size: 10px; color: var(--muted); font-weight: 600; padding-bottom: 4px; }
+  .cal-day {
+    aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+    border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--muted);
+    transition: all 0.15s; position: relative;
+  }
+  .cal-day.empty-cell { visibility: hidden; cursor: default; }
+  .cal-day.allowed { background: rgba(34,197,94,0.15); color: var(--green); border-color: rgba(34,197,94,0.3); }
+  .cal-day.allowed.selected { background: var(--green); color: #fff; }
+  .cal-day:not(.owner-mode):not(.allowed) { cursor: not-allowed; opacity: 0.4; }
+  .cal-day.owner-mode:hover { border-color: var(--accent); }
+  .cal-legend { display: flex; gap: 14px; margin-top: 10px; font-size: 11px; color: var(--muted); flex-wrap: wrap; }
+  .cal-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* PAYSLIP PAGE */
+  .payslip-page { background: #fff; color: #1a1d27; border-radius: 16px; padding: 28px 22px; max-width: 420px; margin: 0 auto; }
+  .payslip-page .ps-header { text-align: center; border-bottom: 2px solid #1a1d27; padding-bottom: 14px; margin-bottom: 16px; }
+  .payslip-page .ps-brand { font-size: 18px; font-weight: 700; }
+  .payslip-page .ps-sub { font-size: 11px; color: #6b7280; margin-top: 2px; }
+  .payslip-page .ps-title { font-size: 13px; font-weight: 600; margin-top: 10px; color: #374151; }
+  .payslip-page .ps-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; border-bottom: 1px solid #e5e7eb; }
+  .payslip-page .ps-row.total { font-weight: 700; font-size: 16px; border-top: 2px solid #1a1d27; border-bottom: none; margin-top: 8px; padding-top: 12px; }
+  .payslip-page .ps-row .neg { color: #dc2626; }
+  .payslip-page .ps-row .pos { color: #16a34a; }
+  .payslip-page .ps-label { color: #6b7280; }
+  .payslip-page .ps-footer { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 18px; }
+
+  @media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .modal { padding: 18px; }
+    .cal-day { font-size: 11px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="loadingScreen">
+  <div class="spinner"></div>
+  <div class="ltext">Menghubungkan ke cloud...</div>
+</div>
+
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="brand">SR <span>HR</span></div>
+      <div class="sub">Sumber Rasa — Manajemen Karyawan (Cloud)</div>
+    </div>
+    <h2>Masuk ke Akun</h2>
+    <div class="field"><label>ID Pengguna</label><input type="text" id="loginId" placeholder="Contoh: ADMIN atau EMP001"></div>
+    <div class="field">
+      <label>Password</label>
+      <div class="pass-wrap">
+        <input type="password" id="loginPass" placeholder="Password">
+        <button type="button" class="pass-toggle" onclick="togglePass('loginPass', this)">👁</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">Masuk</button>
+    <div class="login-err" id="loginErr">ID atau password salah.</div>
+  </div>
+</div>
+
+<div id="appShell">
+  <div class="topbar">
+    <div class="topbar-brand">SR <span>HR</span></div>
+    <div class="topbar-user">
+      <div class="user-badge"><span class="sync-dot" id="syncDot"></span><b id="topbarName">-</b></div>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Keluar</button>
+    </div>
+  </div>
+  <div class="nav-tabs" id="navTabs"></div>
+  <div class="main" id="mainContent"></div>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal" id="modalBox">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Modal</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<script>
+// ========================
+// FIREBASE CONFIG
+// ========================
+const firebaseConfig = {
+  apiKey: "AIzaSyB4RLTL8U4f0pc8r15IdkeeFTWI10peX1s",
+  authDomain: "sumber-rasa-hr.firebaseapp.com",
+  projectId: "sumber-rasa-hr",
+  storageBucket: "sumber-rasa-hr.firebasestorage.app",
+  messagingSenderId: "935825528559",
+  appId: "1:935825528559:web:c80e38219bfd41738a6d1a"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Collections: users, employees, leaves, loans, requests, installments, bonuses, leaveCalendar
+const Cloud = {
+  async getAll(col) {
+    const snap = await db.collection(col).get();
+    return snap.docs.map(d => d.data());
+  },
+  async setDoc(col, id, data) { await db.collection(col).doc(id).set(data); },
+  async deleteDoc(col, id) { await db.collection(col).doc(id).delete(); }
+};
+
+let CACHE = { users: [], employees: [], leaves: [], loans: [], requests: [], installments: [], bonuses: [], leaveCalendar: [] };
+
+async function refreshCache() {
+  const cols = ['users','employees','leaves','loans','requests','installments','bonuses','leaveCalendar'];
+  const results = await Promise.all(cols.map(c => Cloud.getAll(c)));
+  cols.forEach((c,i) => CACHE[c] = results[i]);
+}
+
+async function initSeedAdmin() {
+  const users = await Cloud.getAll('users');
+  if (users.length === 0) {
+    await Cloud.setDoc('users', 'ADMIN', { id: 'ADMIN', password: 'admin123', role: 'admin', name: 'Owner / Admin' });
+  }
+}
+
+async function boot() {
+  try {
+    await initSeedAdmin();
+    await refreshCache();
+    document.getElementById('syncDot').classList.remove('off');
+  } catch (e) {
+    console.error('Firebase connection error:', e);
+    document.getElementById('syncDot').classList.add('off');
+    alert('Gagal terhubung ke cloud. Cek koneksi internet kamu, lalu refresh halaman.\n\nDetail: ' + e.message);
+  }
+  document.getElementById('loadingScreen').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+boot();
+
+// ========================
+// PASSWORD VISIBILITY TOGGLE
+// ========================
+function togglePass(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+  else { input.type = 'password'; btn.textContent = '👁'; }
+}
+
+// ========================
+// AUTH
+// ========================
+let currentUser = null;
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true; btn.textContent = 'Memeriksa...';
+  const id = document.getElementById('loginId').value.trim().toUpperCase();
+  const pass = document.getElementById('loginPass').value;
+
+  await refreshCache();
+  const user = CACHE.users.find(u => u.id === id && u.password === pass);
+
+  btn.disabled = false; btn.textContent = 'Masuk';
+
+  if (!user) { document.getElementById('loginErr').style.display = 'block'; return; }
+  currentUser = user;
+  document.getElementById('loginErr').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'block';
+  document.getElementById('topbarName').textContent = user.name;
+  renderApp();
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('loginId').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginId').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+// ========================
+// APP ROUTER
+// ========================
+let activeTab = '';
+
+function renderApp() {
+  if (currentUser.role === 'admin') renderAdminApp();
+  else renderEmployeeApp();
+}
+
+const adminTabs = [
+  { id: 'dashboard', label: '📊 Dashboard' },
+  { id: 'employees', label: '👥 Karyawan' },
+  { id: 'requests', label: '📋 Pengajuan' },
+  { id: 'calendar', label: '📅 Kalender Cuti' },
+  { id: 'loans', label: '💰 Pinjaman' },
+  { id: 'payroll', label: '🧾 Slip Gaji' },
+];
+const empTabs = [
+  { id: 'home', label: '🏠 Beranda' },
+  { id: 'leave', label: '📅 Ajukan Izin' },
+  { id: 'loan', label: '💸 Ajukan Pinjaman' },
+  { id: 'myrequests', label: '📋 Pengajuan Saya' },
+  { id: 'myslip', label: '🧾 Slip Gaji Saya' },
+];
+
+function renderTabs(tabs) {
+  const nav = document.getElementById('navTabs');
+  nav.innerHTML = tabs.map(t => `<div class="nav-tab ${activeTab===t.id?'active':''}" onclick="switchTab('${t.id}')">${t.label}</div>`).join('');
+}
+
+async function switchTab(id) {
+  activeTab = id;
+  await refreshCache();
+  if (currentUser.role === 'admin') { renderTabs(adminTabs); renderAdminTab(id); }
+  else { renderTabs(empTabs); renderEmpTab(id); }
+}
+
+function renderAdminApp() { activeTab = activeTab || 'dashboard'; renderTabs(adminTabs); renderAdminTab(activeTab); }
+function renderEmployeeApp() { activeTab = activeTab || 'home'; renderTabs(empTabs); renderEmpTab(activeTab); }
+
+function renderAdminTab(tab) {
+  const el = document.getElementById('mainContent');
+  if (tab === 'dashboard') el.innerHTML = adminDashboard();
+  else if (tab === 'employees') el.innerHTML = adminEmployees();
+  else if (tab === 'requests') el.innerHTML = adminRequests();
+  else if (tab === 'calendar') el.innerHTML = adminCalendar();
+  else if (tab === 'loans') el.innerHTML = adminLoans();
+  else if (tab === 'payroll') el.innerHTML = adminPayroll();
+}
+function renderEmpTab(tab) {
+  const el = document.getElementById('mainContent');
+  if (tab === 'home') el.innerHTML = empHome();
+  else if (tab === 'leave') el.innerHTML = empLeaveForm();
+  else if (tab === 'loan') el.innerHTML = empLoanForm();
+  else if (tab === 'myrequests') el.innerHTML = empMyRequests();
+  else if (tab === 'myslip') el.innerHTML = empMySlip();
+}
+
+// ========================
+// DASHBOARD
+// ========================
+function adminDashboard() {
+  const emps = CACHE.employees, reqs = CACHE.requests, loans = CACHE.loans;
+  const pending = reqs.filter(r => r.status === 'pending').length;
+  const activeLoans = loans.filter(l => l.status === 'active').length;
+  return `
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-label">Total Karyawan</div><div class="stat-val">${emps.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Pengajuan Pending</div><div class="stat-val yellow">${pending}</div></div>
+      <div class="stat-card"><div class="stat-label">Pinjaman Aktif</div><div class="stat-val">${activeLoans}</div></div>
+      <div class="stat-card"><div class="stat-label">Bulan Ini</div><div class="stat-val green" style="font-size:14px">${bulanLabel()}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Pengajuan Terbaru</div>
+      ${pending === 0 ? `<div class="empty">Tidak ada pengajuan pending.</div>` : reqs.filter(r=>r.status==='pending').slice(-5).reverse().map(r => reqCard(r, true)).join('')}
+    </div>`;
+}
+
+function reqCard(r, withAction=false) {
+  const emp = getEmp(r.empId);
+  const name = emp ? emp.name : r.empId;
+  const isLeave = r.type === 'leave';
+  const detail = isLeave
+    ? `Izin tanggal: ${r.dates ? r.dates.join(', ') : '-'} | Alasan: ${r.reason||'-'}`
+    : `Pinjam: ${fmtRp(r.amount)} | Cicilan: ${fmtRp(r.installment)}/bln | Alasan: ${r.reason||'-'}`;
+  return `
+    <div class="req-item">
+      <div class="req-top">
+        <div>
+          <div class="req-type">${name} — ${isLeave?'Izin':'Pinjaman'}</div>
+          <div class="req-detail">${detail}</div>
+          <div class="req-detail" style="margin-top:2px;font-size:11px;color:var(--muted)">${r.createdAt||''}</div>
+        </div>
+        <span class="badge badge-${r.status}">${labelStatus(r.status)}</span>
+      </div>
+      ${withAction && r.status==='pending' ? `
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-success btn-sm" onclick="approveReq('${r.id}')">✓ Approve</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectReq('${r.id}')">✕ Tolak</button>
+        </div>` : ''}
+    </div>`;
+}
+
+// ========================
+// KARYAWAN (ADMIN)
+// ========================
+function adminEmployees() {
+  const emps = CACHE.employees;
+  return `
+    <div class="section-header">
+      <div class="section-title">Data Karyawan</div>
+      <button class="btn btn-primary btn-sm" onclick="openAddEmp()">+ Tambah</button>
+    </div>
+    ${emps.length === 0 ? `<div class="card"><div class="empty">Belum ada karyawan. Tambah dulu ya!</div></div>` :
+      emps.map(e => {
+        const inst = CACHE.installments.find(i => i.empId === e.id && i.status === 'active');
+        return `
+        <div class="emp-item">
+          <div class="emp-avatar">${e.name[0].toUpperCase()}</div>
+          <div class="emp-info">
+            <div class="emp-name">${e.name}</div>
+            <div class="emp-id">ID: ${e.id} · ${fmtRp(e.dailyWage||0)}/hari · Cuti gratis: ${e.freeLeaveDays||0} hari/bln</div>
+            ${inst ? `<div class="emp-id" style="color:var(--yellow)">Cicilan aktif: ${fmtRp(inst.monthlyAmount)}/bln (sisa ${inst.monthsLeft} bln)</div>` : ''}
+          </div>
+          <div class="emp-actions">
+            <button class="btn btn-ghost btn-sm" onclick="openEditEmp('${e.id}')">Edit Gaji</button>
+            <button class="btn btn-ghost btn-sm" onclick="openInstallment('${e.id}')">Cicilan</button>
+            <button class="btn btn-ghost btn-sm" onclick="openBonus('${e.id}')">Bonus</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteEmp('${e.id}')">Hapus</button>
+          </div>
+        </div>`;
+      }).join('')
+    }`;
+}
+
+function openAddEmp() {
+  showModal('Tambah Karyawan', `
+    <div class="field"><label>Nama Lengkap</label><input id="mEmpName" placeholder="Contoh: Budi Santoso"></div>
+    <div class="field"><label>ID Login Karyawan</label><input id="mEmpId" placeholder="Contoh: EMP001" style="text-transform:uppercase"></div>
+    <div class="field">
+      <label>Password</label>
+      <div class="pass-wrap">
+        <input type="password" id="mEmpPass" placeholder="Password untuk karyawan">
+        <button type="button" class="pass-toggle" onclick="togglePass('mEmpPass', this)">👁</button>
+      </div>
+    </div>
+    <div class="field"><label>Gaji per Hari (Rp)</label><input type="number" id="mEmpDaily" placeholder="115000"></div>
+    <div class="field"><label>Jatah Cuti Tanpa Potong Gaji (hari/bulan)</label>
+      <select id="mEmpFreeLeave">
+        <option value="0">0 hari</option>
+        <option value="1">1 hari</option>
+        <option value="2">2 hari</option>
+      </select>
+    </div>
+    <div class="field"><label>Posisi / Jabatan</label><input id="mEmpPos" placeholder="Kasir, Admin, dll"></div>
+    <button class="btn btn-primary" id="saveEmpBtn" style="margin-top:6px" onclick="saveNewEmp()">Simpan Karyawan</button>
+  `);
+}
+
+async function saveNewEmp() {
+  const name = document.getElementById('mEmpName').value.trim();
+  const id = document.getElementById('mEmpId').value.trim().toUpperCase();
+  const pass = document.getElementById('mEmpPass').value;
+  const dailyWage = parseInt(document.getElementById('mEmpDaily').value) || 0;
+  const freeLeaveDays = parseInt(document.getElementById('mEmpFreeLeave').value) || 0;
+  const pos = document.getElementById('mEmpPos').value.trim();
+  if (!name || !id || !pass || !dailyWage) { alert('Lengkapi semua field!'); return; }
+  if (CACHE.employees.find(e=>e.id===id) || CACHE.users.find(u=>u.id===id)) { alert('ID sudah dipakai!'); return; }
+
+  const btn = document.getElementById('saveEmpBtn');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    await Cloud.setDoc('employees', id, { id, name, dailyWage, freeLeaveDays, position: pos, createdAt: today() });
+    await Cloud.setDoc('users', id, { id, password: pass, role: 'employee', name });
+    await refreshCache();
+    closeModal();
+    renderAdminTab('employees');
+  } catch(e) {
+    alert('Gagal simpan: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Simpan Karyawan';
+  }
+}
+
+function openEditEmp(id) {
+  const e = CACHE.employees.find(x=>x.id===id);
+  if (!e) return;
+  showModal('Edit Data: '+e.name, `
+    <div class="field"><label>Nama Lengkap</label><input id="mEmpName" value="${e.name}"></div>
+    <div class="field"><label>Gaji per Hari (Rp)</label><input type="number" id="mEmpDaily" value="${e.dailyWage||0}"></div>
+    <div class="field"><label>Jatah Cuti Tanpa Potong Gaji (hari/bulan)</label>
+      <select id="mEmpFreeLeave">
+        <option value="0" ${(e.freeLeaveDays||0)===0?'selected':''}>0 hari</option>
+        <option value="1" ${e.freeLeaveDays===1?'selected':''}>1 hari</option>
+        <option value="2" ${e.freeLeaveDays===2?'selected':''}>2 hari</option>
+      </select>
+    </div>
+    <div class="field"><label>Posisi</label><input id="mEmpPos" value="${e.position||''}"></div>
+    <div class="field">
+      <label>Password Baru (kosongkan jika tidak ubah)</label>
+      <div class="pass-wrap">
+        <input type="password" id="mEmpPass" placeholder="(biarkan kosong)">
+        <button type="button" class="pass-toggle" onclick="togglePass('mEmpPass', this)">👁</button>
+      </div>
+    </div>
+    <div class="notice" style="margin-bottom:14px">💡 Kenaikan gaji per hari akan langsung berlaku untuk perhitungan slip gaji bulan berjalan.</div>
+    <button class="btn btn-primary" id="saveEditBtn" style="margin-top:6px" onclick="saveEditEmp('${id}')">Simpan Perubahan</button>
+  `);
+}
+
+async function saveEditEmp(id) {
+  const e = CACHE.employees.find(x=>x.id===id);
+  if (!e) return;
+  const updated = {
+    ...e,
+    name: document.getElementById('mEmpName').value.trim() || e.name,
+    dailyWage: parseInt(document.getElementById('mEmpDaily').value) || e.dailyWage,
+    freeLeaveDays: parseInt(document.getElementById('mEmpFreeLeave').value),
+    position: document.getElementById('mEmpPos').value.trim()
+  };
+  const newPass = document.getElementById('mEmpPass').value;
+  const btn = document.getElementById('saveEditBtn');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    await Cloud.setDoc('employees', id, updated);
+    const u = CACHE.users.find(u=>u.id===id);
+    if (u) {
+      const updatedUser = { ...u, name: updated.name };
+      if (newPass) updatedUser.password = newPass;
+      await Cloud.setDoc('users', id, updatedUser);
+    }
+    await refreshCache();
+    closeModal();
+    renderAdminTab('employees');
+  } catch(e) {
+    alert('Gagal simpan: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Simpan Perubahan';
+  }
+}
+
+async function deleteEmp(id) {
+  if (!confirm('Hapus karyawan ini? Data terkait tetap tersimpan.')) return;
+  try {
+    await Cloud.deleteDoc('employees', id);
+    await Cloud.deleteDoc('users', id);
+    await refreshCache();
+    renderAdminTab('employees');
+  } catch(e) { alert('Gagal hapus: ' + e.message); }
+}
+
+// --- CICILAN WAJIB (per karyawan, input owner) ---
+function openInstallment(empId) {
+  const emp = getEmp(empId);
+  const existing = CACHE.installments.find(i => i.empId === empId && i.status === 'active');
+  showModal('Cicilan Wajib: ' + emp.name, `
+    ${existing ? `
+      <div class="notice warn" style="margin-bottom:14px">
+        Cicilan aktif: <b>${fmtRp(existing.monthlyAmount)}/bulan</b>, sisa <b>${existing.monthsLeft} bulan</b> lagi.
+      </div>
+      <button class="btn btn-danger btn-sm" style="margin-bottom:16px" onclick="stopInstallment('${existing.id}','${empId}')">Hentikan / Lunasi Cicilan Ini</button>
+      <div class="divider"></div>
+      <div class="card-title">Buat Cicilan Baru (akan ganti yang aktif)</div>
+    ` : ''}
+    <div class="field"><label>Total Pinjaman (Rp)</label><input type="number" id="mInstTotal" placeholder="3000000"></div>
+    <div class="field"><label>Cicilan per Bulan (Rp)</label><input type="number" id="mInstMonthly" placeholder="250000"></div>
+    <div class="field"><label>Jangka Waktu (bulan)</label><input type="number" id="mInstMonths" placeholder="12"></div>
+    <div class="field"><label>Catatan</label><textarea id="mInstNote" placeholder="Keterangan pinjaman"></textarea></div>
+    <button class="btn btn-primary" id="instSaveBtn" onclick="saveInstallment('${empId}')">Simpan Cicilan</button>
+  `);
+}
+
+async function saveInstallment(empId) {
+  const total = parseInt(document.getElementById('mInstTotal').value) || 0;
+  const monthly = parseInt(document.getElementById('mInstMonthly').value) || 0;
+  const months = parseInt(document.getElementById('mInstMonths').value) || 0;
+  const note = document.getElementById('mInstNote').value.trim();
+  if (!total || !monthly || !months) { alert('Lengkapi semua field!'); return; }
+
+  const btn = document.getElementById('instSaveBtn');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    // deactivate old one if exists
+    const old = CACHE.installments.find(i => i.empId === empId && i.status === 'active');
+    if (old) { old.status = 'replaced'; await Cloud.setDoc('installments', old.id, old); }
+
+    const id = 'INST' + Date.now();
+    await Cloud.setDoc('installments', id, {
+      id, empId, totalAmount: total, monthlyAmount: monthly, totalMonths: months,
+      monthsLeft: months, status: 'active', note, startedAt: today()
+    });
+    await refreshCache();
+    closeModal();
+    renderAdminTab('employees');
+  } catch(e) {
+    alert('Gagal simpan: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Simpan Cicilan';
+  }
+}
+
+async function stopInstallment(instId, empId) {
+  if (!confirm('Hentikan cicilan ini? Tidak akan dipotong lagi bulan depan.')) return;
+  const inst = CACHE.installments.find(i => i.id === instId);
+  if (!inst) return;
+  inst.status = 'paid';
+  inst.monthsLeft = 0;
+  try {
+    await Cloud.setDoc('installments', instId, inst);
+    await refreshCache();
+    closeModal();
+    renderAdminTab('employees');
+  } catch(e) { alert('Gagal update: ' + e.message); }
+}
+
+// --- BONUS ---
+function openBonus(empId) {
+  const emp = getEmp(empId);
+  const now = new Date();
+  showModal('Tambah Bonus: ' + emp.name, `
+    <div class="field"><label>Bulan</label>
+      <select id="mBonusMonth">${Array.from({length:12},(_,i)=>`<option value="${i}" ${i===now.getMonth()?'selected':''}>${monthName(i)}</option>`).join('')}</select>
+    </div>
+    <div class="field"><label>Tahun</label>
+      <select id="mBonusYear"><option value="${now.getFullYear()}">${now.getFullYear()}</option><option value="${now.getFullYear()+1}">${now.getFullYear()+1}</option></select>
+    </div>
+    <div class="field"><label>Nominal Bonus (Rp)</label><input type="number" id="mBonusAmount" placeholder="200000"></div>
+    <div class="field"><label>Catatan Bonus</label><textarea id="mBonusNote" placeholder="Bonus kinerja, THR, dll"></textarea></div>
+    <button class="btn btn-primary" id="bonusSaveBtn" onclick="saveBonus('${empId}')">Simpan Bonus</button>
+    <div class="divider"></div>
+    <div class="card-title">Riwayat Bonus</div>
+    ${CACHE.bonuses.filter(b=>b.empId===empId).length === 0 ? `<div class="empty">Belum ada bonus.</div>` :
+      CACHE.bonuses.filter(b=>b.empId===empId).reverse().map(b => `
+        <div class="loan-item">
+          <div class="loan-meta"><b style="color:var(--green)">${fmtRp(b.amount)}</b> — ${monthName(b.month)} ${b.year}</div>
+          <div class="loan-meta">${b.note||'-'}</div>
+        </div>`).join('')
+    }
+  `);
+}
+
+async function saveBonus(empId) {
+  const month = parseInt(document.getElementById('mBonusMonth').value);
+  const year = parseInt(document.getElementById('mBonusYear').value);
+  const amount = parseInt(document.getElementById('mBonusAmount').value) || 0;
+  const note = document.getElementById('mBonusNote').value.trim();
+  if (!amount) { alert('Isi nominal bonus!'); return; }
+  const btn = document.getElementById('bonusSaveBtn');
+  btn.disabled = true; btn.textContent = 'Menyimpan...';
+  try {
+    const id = 'BNS' + Date.now();
+    await Cloud.setDoc('bonuses', id, { id, empId, month, year, amount, note, createdAt: today() });
+    await refreshCache();
+    closeModal();
+    renderAdminTab('employees');
+  } catch(e) {
+    alert('Gagal simpan: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Simpan Bonus';
+  }
+}
+
+// ========================
+// PENGAJUAN (ADMIN)
+// ========================
+function adminRequests() { return renderReqList(CACHE.requests); }
+function renderReqList(reqs) {
+  return `
+    <div class="section-header">
+      <div class="section-title">Semua Pengajuan</div>
+      <select onchange="filterReqs(this.value)" style="width:auto">
+        <option value="all">Semua</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Disetujui</option>
+        <option value="rejected">Ditolak</option>
+      </select>
+    </div>
+    <div id="reqListBody">
+      ${reqs.length === 0 ? `<div class="card"><div class="empty">Tidak ada pengajuan.</div></div>` : [...reqs].reverse().map(r => reqCard(r, true)).join('')}
+    </div>`;
+}
+function filterReqs(val) {
+  const filtered = val === 'all' ? CACHE.requests : CACHE.requests.filter(r=>r.status===val);
+  document.getElementById('reqListBody').innerHTML = filtered.length === 0
+    ? `<div class="card"><div class="empty">Tidak ada pengajuan.</div></div>`
+    : [...filtered].reverse().map(r => reqCard(r, true)).join('');
+}
+
+async function approveReq(id) {
+  const r = CACHE.requests.find(x=>x.id===id);
+  if (!r) return;
+  r.status = 'approved';
+  r.approvedAt = today();
+  try {
+    if (r.type === 'loan') {
+      const loanId = 'LOAN' + Date.now();
+      await Cloud.setDoc('loans', loanId, {
+        id: loanId, empId: r.empId, amount: r.amount, remaining: r.amount,
+        installment: r.installment, reason: r.reason, status: 'active', createdAt: today(), reqId: id,
+        month: r.requestMonth, year: r.requestYear
+      });
+    }
+    if (r.type === 'leave') {
+      const lvId = 'LV' + Date.now();
+      await Cloud.setDoc('leaves', lvId, {
+        id: lvId, empId: r.empId, dates: r.dates, dayNumbers: r.dayNumbers || [], reason: r.reason,
+        month: r.month, year: r.year, approvedAt: today(), reqId: id
+      });
+    }
+    await Cloud.setDoc('requests', id, r);
+    await refreshCache();
+    renderAdminTab(activeTab);
+  } catch(e) { alert('Gagal approve: ' + e.message); }
+}
+
+async function rejectReq(id) {
+  const r = CACHE.requests.find(x=>x.id===id);
+  if (!r) return;
+  r.status = 'rejected';
+  try {
+    await Cloud.setDoc('requests', id, r);
+    await refreshCache();
+    renderAdminTab(activeTab);
+  } catch(e) { alert('Gagal tolak: ' + e.message); }
+}
+
+// ========================
+// KALENDER CUTI (ADMIN: set tanggal yg boleh cuti)
+// ========================
+let calViewMonth = new Date().getMonth();
+let calViewYear = new Date().getFullYear();
+
+function getCalendarEntry(month, year) {
+  return CACHE.leaveCalendar.find(c => c.month === month && c.year === year);
+}
+
+function adminCalendar() {
+  const entry = getCalendarEntry(calViewMonth, calViewYear);
+  const allowedDays = entry ? entry.allowedDays : [];
+  return `
+    <div class="section-title" style="margin-bottom:6px">Kalender Cuti — Tandai Tanggal yang Boleh Diajukan</div>
+    <div class="notice" style="margin-bottom:14px">Klik tanggal untuk menandai/membatalkan sebagai <b>hari yang boleh cuti</b> bulan ini. Karyawan hanya bisa mengajukan izin di tanggal yang ditandai hijau.</div>
+    <div class="card">
+      <div class="month-bar">
+        <button class="btn btn-ghost btn-sm" onclick="calNavigate(-1)">‹ Bulan Lalu</button>
+        <div style="flex:1;text-align:center;font-weight:700;font-size:14px">${monthName(calViewMonth)} ${calViewYear}</div>
+        <button class="btn btn-ghost btn-sm" onclick="calNavigate(1)">Bulan Depan ›</button>
+      </div>
+      <div id="calGridWrap">${renderCalGrid(calViewMonth, calViewYear, allowedDays, true)}</div>
+      <div class="cal-legend">
+        <span><span class="legend-dot" style="background:rgba(34,197,94,0.5)"></span> Boleh diajukan cuti</span>
+        <span><span class="legend-dot" style="background:var(--surface2);border:1px solid var(--border)"></span> Tidak boleh</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Jatah Cuti Tanpa Potong Gaji per Karyawan</div>
+      ${CACHE.employees.length === 0 ? `<div class="empty">Belum ada karyawan.</div>` :
+        CACHE.employees.map(e => `
+          <div class="emp-item">
+            <div class="emp-avatar">${e.name[0].toUpperCase()}</div>
+            <div class="emp-info">
+              <div class="emp-name">${e.name}</div>
+              <div class="emp-id">Saat ini: ${e.freeLeaveDays||0} hari/bulan tanpa potong gaji</div>
+            </div>
+            <select style="width:auto" onchange="quickSetFreeLeave('${e.id}', this.value)">
+              <option value="0" ${(e.freeLeaveDays||0)===0?'selected':''}>0 hari</option>
+              <option value="1" ${e.freeLeaveDays===1?'selected':''}>1 hari</option>
+              <option value="2" ${e.freeLeaveDays===2?'selected':''}>2 hari</option>
+            </select>
+          </div>`).join('')
+      }
+    </div>`;
+}
+
+function renderCalGrid(month, year, allowedDays, ownerMode) {
+  const dows = ['Min','Sen','Sel','Rab','Kam','Jum','Sab'];
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  let cells = dows.map(d => `<div class="cal-dow">${d}</div>`).join('');
+  for (let i=0; i<firstDay; i++) cells += `<div class="cal-day empty-cell"></div>`;
+  for (let d=1; d<=daysInMonth; d++) {
+    const isAllowed = allowedDays.includes(d);
+    const clickFn = ownerMode ? `onclick="toggleCalDay(${d})"` : `onclick="pickLeaveDay(${d}, ${isAllowed})"`;
+    cells += `<div class="cal-day ${isAllowed?'allowed':''} ${ownerMode?'owner-mode':''}" id="calday-${d}" ${clickFn}>${d}</div>`;
+  }
+  return `<div class="cal-grid">${cells}</div>`;
+}
+
+function calNavigate(dir) {
+  calViewMonth += dir;
+  if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+  if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+  renderAdminTab('calendar');
+}
+
+async function toggleCalDay(d) {
+  let entry = getCalendarEntry(calViewMonth, calViewYear);
+  if (!entry) {
+    entry = { id: `CAL-${calViewYear}-${calViewMonth}`, month: calViewMonth, year: calViewYear, allowedDays: [] };
+  }
+  const idx = entry.allowedDays.indexOf(d);
+  if (idx >= 0) entry.allowedDays.splice(idx, 1);
+  else entry.allowedDays.push(d);
+
+  try {
+    await Cloud.setDoc('leaveCalendar', entry.id, entry);
+    await refreshCache();
+    renderAdminTab('calendar');
+  } catch(e) { alert('Gagal update kalender: ' + e.message); }
+}
+
+async function quickSetFreeLeave(empId, val) {
+  const e = CACHE.employees.find(x=>x.id===empId);
+  if (!e) return;
+  e.freeLeaveDays = parseInt(val);
+  try {
+    await Cloud.setDoc('employees', empId, e);
+    await refreshCache();
+  } catch(err) { alert('Gagal update: ' + err.message); }
+}
+
+// ========================
+// PINJAMAN (ADMIN) — dari pengajuan karyawan
+// ========================
+function adminLoans() {
+  const loans = CACHE.loans;
+  return `
+    <div class="section-header"><div class="section-title">Pinjaman dari Pengajuan Karyawan</div></div>
+    <div class="notice" style="margin-bottom:14px">Ini adalah pinjaman yang diajukan karyawan via aplikasi dan sudah di-approve. Untuk cicilan wajib jangka panjang, atur di menu Karyawan → tombol "Cicilan".</div>
+    ${loans.length === 0 ? `<div class="card"><div class="empty">Belum ada pinjaman aktif.</div></div>` :
+      loans.map(l => {
+        const emp = getEmp(l.empId);
+        const pct = Math.max(0, Math.min(100, Math.round((1-(l.remaining/l.amount))*100)));
+        return `<div class="loan-item">
+          <div class="loan-header">
+            <div>
+              <div class="loan-name">${emp?emp.name:l.empId}</div>
+              <div class="loan-meta">Pinjam: ${fmtRp(l.amount)} · Cicilan: ${fmtRp(l.installment)}/bln · Sisa: ${fmtRp(l.remaining)}</div>
+            </div>
+            <span class="badge badge-${l.status==='active'?'active':'lunas'}">${l.status==='active'?'Aktif':'Lunas'}</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px">${pct}% terbayar</div>
+          ${l.status==='active' ? `<div style="margin-top:8px;display:flex;gap:6px">
+            <button class="btn btn-success btn-sm" onclick="bayarCicilan('${l.id}')">Catat Cicilan Bulan Ini</button>
+            <button class="btn btn-ghost btn-sm" onclick="lunasiLoan('${l.id}')">Tandai Lunas</button>
+          </div>` : ''}
+        </div>`;
+      }).join('')
+    }`;
+}
+
+async function bayarCicilan(id) {
+  const l = CACHE.loans.find(x=>x.id===id);
+  if (!l) return;
+  l.remaining = Math.max(0, l.remaining - l.installment);
+  if (l.remaining <= 0) l.status = 'paid';
+  try { await Cloud.setDoc('loans', id, l); await refreshCache(); renderAdminTab('loans'); }
+  catch(e) { alert('Gagal update: ' + e.message); }
+}
+async function lunasiLoan(id) {
+  if (!confirm('Tandai pinjaman ini sebagai lunas?')) return;
+  const l = CACHE.loans.find(x=>x.id===id);
+  if (!l) return;
+  l.remaining = 0; l.status = 'paid';
+  try { await Cloud.setDoc('loans', id, l); await refreshCache(); renderAdminTab('loans'); }
+  catch(e) { alert('Gagal update: ' + e.message); }
+}
+
+// ========================
+// PAYROLL ENGINE
+// ========================
+function countDaysInMonth(month, year) { return new Date(year, month+1, 0).getDate(); }
+
+function generateSlip(emp, month, year) {
+  const totalDaysInMonth = countDaysInMonth(month, year);
+
+  // approved leaves this month for this employee
+  const empLeaves = CACHE.leaves.filter(l => l.empId === emp.id && parseInt(l.month)===month && parseInt(l.year)===year);
+  const leaveDates = empLeaves.flatMap(l => l.dates || []);
+  const leaveDayNumbers = empLeaves.flatMap(l => l.dayNumbers || []);
+  const izinDays = leaveDayNumbers.length;
+
+  // how many of those leave days fall on owner-allowed calendar dates (eligible for free leave)
+  const calEntry = getCalendarEntry(month, year);
+  const allowedDays = calEntry ? calEntry.allowedDays : [];
+  const eligibleFreeDays = leaveDayNumbers.filter(d => allowedDays.includes(d)).length;
+  const freeQuota = emp.freeLeaveDays || 0;
+  const freeDaysUsed = Math.min(eligibleFreeDays, freeQuota);
+  const paidDeductDays = izinDays - freeDaysUsed; // days that DO reduce salary
+
+  // actual work days = calendar days in month - leave days that reduce salary
+  // (non-deducted free-leave days still count as "worked" for pay purposes)
+  const hariKerjaAktual = totalDaysInMonth - paidDeductDays;
+
+  const dailyWage = emp.dailyWage || 0;
+  const gajiKotor = dailyWage * hariKerjaAktual;
+
+  // bonus this month
+  const bonuses = CACHE.bonuses.filter(b => b.empId === emp.id && b.month === month && b.year === year);
+  const totalBonus = bonuses.reduce((s,b) => s + b.amount, 0);
+
+  // mandatory installment (owner-set)
+  const inst = CACHE.installments.find(i => i.empId === emp.id && i.status === 'active');
+  const instDeduct = inst ? inst.monthlyAmount : 0;
+
+  // active loan from employee requests (current month installment)
+  const activeLoans = CACHE.loans.filter(l => l.empId === emp.id && l.status === 'active');
+  const loanDeduct = activeLoans.reduce((s,l) => s + (l.installment||0), 0);
+
+  const take = Math.max(0, gajiKotor + totalBonus - instDeduct - loanDeduct);
+
+  return {
+    empId: emp.id, name: emp.name, dailyWage, totalDaysInMonth, izinDays, paidDeductDays, freeDaysUsed,
+    hariKerjaAktual, gajiKotor, totalBonus, bonuses, instDeduct, installment: inst, loanDeduct, take, leaveDates
+  };
+}
+
+function adminPayroll() {
+  if (CACHE.employees.length === 0) return `<div class="card"><div class="empty">Belum ada karyawan.</div></div>`;
+  const now = new Date();
+  return renderPayrollSlips(now.getMonth(), now.getFullYear());
+}
+
+function renderPayrollSlips(selMonth, selYear) {
+  const emps = CACHE.employees;
+  const monthOpts = Array.from({length:12},(_,m)=>`<option value="${m}" ${m===selMonth?'selected':''}>${monthName(m)}</option>`).join('');
+  const slips = emps.map(e => generateSlip(e, selMonth, selYear));
+  return `
+    <div class="month-bar">
+      <label style="font-size:13px;color:var(--muted);white-space:nowrap">Pilih Bulan:</label>
+      <select onchange="changePayrollMonth(this.value,${selYear})">${monthOpts}</select>
+    </div>
+    ${emps.length === 0 ? `<div class="card"><div class="empty">Belum ada karyawan.</div></div>` :
+      slips.map(s => `
+      <div class="card" style="margin-bottom:14px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div>
+            <div style="font-weight:700;font-size:15px">${s.name}</div>
+            <div style="font-size:12px;color:var(--muted)">${s.empId} · ${monthName(selMonth)} ${selYear}</div>
+          </div>
+          <div style="font-size:18px;font-weight:700;color:var(--green)">${fmtRp(s.take)}</div>
+        </div>
+        <div class="slip-row"><span class="slip-label">Gaji per Hari</span><span>${fmtRp(s.dailyWage)}</span></div>
+        <div class="slip-row"><span class="slip-label">Hari Kerja Aktual</span><span>${s.hariKerjaAktual} / ${s.totalDaysInMonth} hari</span></div>
+        <div class="slip-row"><span class="slip-label">Gaji Kotor</span><span>${fmtRp(s.gajiKotor)}</span></div>
+        ${s.izinDays > 0 ? `<div class="slip-row"><span class="slip-label">Total Izin (${s.freeDaysUsed} gratis, ${s.paidDeductDays} potong)</span><span style="color:var(--yellow)">${s.izinDays} hari</span></div>` : ''}
+        ${s.totalBonus > 0 ? `<div class="slip-row add"><span class="slip-label">Bonus</span><span>+ ${fmtRp(s.totalBonus)}</span></div>` : ''}
+        ${s.instDeduct > 0 ? `<div class="slip-row deduct"><span class="slip-label">Cicilan Wajib</span><span>- ${fmtRp(s.instDeduct)}</span></div>` : ''}
+        ${s.loanDeduct > 0 ? `<div class="slip-row deduct"><span class="slip-label">Pinjaman Bulan Berjalan</span><span>- ${fmtRp(s.loanDeduct)}</span></div>` : ''}
+        <div class="divider"></div>
+        <div class="slip-row total"><span>Estimasi Gaji Bersih</span><span>${fmtRp(s.take)}</span></div>
+        ${s.leaveDates.length > 0 ? `<div style="margin-top:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:4px">Tanggal izin tercatat:</div><div class="leave-dates">${s.leaveDates.map(d=>`<span class="leave-date-tag">${d}</span>`).join('')}</div></div>` : ''}
+        <button class="btn btn-ghost btn-sm" style="margin-top:12px;width:100%" onclick="viewPayslipDetail('${s.empId}',${selMonth},${selYear})">📄 Lihat Slip Gaji Lengkap</button>
+      </div>`).join('')
+    }`;
+}
+
+function changePayrollMonth(m, y) {
+  document.getElementById('mainContent').innerHTML = renderPayrollSlips(parseInt(m), parseInt(y));
+}
+
+// ========================
+// EMPLOYEE VIEWS
+// ========================
+function empHome() {
+  const emp = getEmp(currentUser.id);
+  const loans = CACHE.loans.filter(l=>l.empId===currentUser.id && l.status==='active');
+  const inst = CACHE.installments.find(i=>i.empId===currentUser.id && i.status==='active');
+  return `
+    <div class="emp-dash-header">
+      <div class="greet">Selamat datang,</div>
+      <div class="name">${currentUser.name}</div>
+      <div class="emp-id-badge">ID: ${currentUser.id}</div>
+    </div>
+    <div class="stats-grid" style="margin-top:16px">
+      <div class="stat-card"><div class="stat-label">Gaji per Hari</div><div class="stat-val" style="font-size:16px">${emp ? fmtRp(emp.dailyWage) : '-'}</div></div>
+      <div class="stat-card"><div class="stat-label">Jatah Cuti Gratis</div><div class="stat-val" style="font-size:16px">${emp ? emp.freeLeaveDays||0 : 0} hari/bln</div></div>
+    </div>
+    ${loans.length > 0 ? `
+      <div class="card">
+        <div class="card-title">Pinjaman Aktif Saya</div>
+        ${loans.map(l => {
+          const pct = Math.max(0, Math.min(100, Math.round((1-(l.remaining/l.amount))*100)));
+          return `<div class="loan-item">
+            <div class="loan-meta">Total pinjam: ${fmtRp(l.amount)} · Cicilan: ${fmtRp(l.installment)}/bln</div>
+            <div class="loan-meta" style="margin-top:2px">Sisa hutang: <b style="color:var(--red)">${fmtRp(l.remaining)}</b></div>
+            <div class="progress-bar" style="margin-top:8px"><div class="progress-fill" style="width:${pct}%"></div></div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px">${pct}% terbayar</div>
+          </div>`;
+        }).join('')}
+      </div>` : ''}
+    ${inst ? `
+      <div class="card">
+        <div class="card-title">Cicilan Wajib Berjalan</div>
+        <div class="loan-meta">Potongan: <b style="color:var(--red)">${fmtRp(inst.monthlyAmount)}/bulan</b></div>
+        <div class="loan-meta" style="margin-top:2px">Sisa tenor: ${inst.monthsLeft} bulan</div>
+      </div>` : ''}
+    <div class="notice" style="margin-top:8px">Untuk mengajukan <b>izin</b> atau <b>pinjaman uang</b>, pilih menu di atas. Pengajuan akan diproses oleh admin.</div>`;
+}
+
+let selectedLeaveDays = [];
+let leaveFormMonth = new Date().getMonth();
+let leaveFormYear = new Date().getFullYear();
+
+function empLeaveForm() {
+  selectedLeaveDays = [];
+  const calEntry = getCalendarEntry(leaveFormMonth, leaveFormYear);
+  const allowedDays = calEntry ? calEntry.allowedDays : [];
+
+  // count how many leave days already taken this month (approved)
+  const empLeavesThisMonth = CACHE.leaves.filter(l => l.empId === currentUser.id && l.month === leaveFormMonth && l.year === leaveFormYear);
+  const daysAlreadyTaken = empLeavesThisMonth.flatMap(l => l.dayNumbers || []).length;
+  const emp = getEmp(currentUser.id);
+  const freeQuota = emp ? (emp.freeLeaveDays || 0) : 0;
+
+  return `
+    <div class="section-title" style="margin-bottom:14px">Ajukan Izin / Cuti</div>
+    <div class="card">
+      <div class="month-bar">
+        <button class="btn btn-ghost btn-sm" onclick="leaveFormNavigate(-1)">‹</button>
+        <div style="flex:1;text-align:center;font-weight:700;font-size:14px">${monthName(leaveFormMonth)} ${leaveFormYear}</div>
+        <button class="btn btn-ghost btn-sm" onclick="leaveFormNavigate(1)">›</button>
+      </div>
+      ${allowedDays.length === 0 ? `
+        <div class="notice warn">Belum ada tanggal yang dibuka untuk pengajuan cuti di bulan ini. Hubungi admin/owner.</div>
+      ` : `
+        <div id="leaveCalWrap">${renderCalGrid(leaveFormMonth, leaveFormYear, allowedDays, false)}</div>
+        <div class="cal-legend">
+          <span><span class="legend-dot" style="background:rgba(34,197,94,0.5)"></span> Boleh diajukan</span>
+        </div>
+        <div class="notice" style="margin-top:10px">Jatah cuti tanpa potong gaji bulan ini: <b>${freeQuota} hari</b>. Sudah dipakai/diajukan: <b>${daysAlreadyTaken} hari</b>.</div>
+        <div class="field" style="margin-top:14px"><label>Tanggal Dipilih</label><input id="lvSelectedDisplay" readonly placeholder="Klik tanggal hijau di atas"></div>
+        <div class="field"><label>Alasan</label><textarea id="lvReason" placeholder="Sakit, urusan keluarga, dll"></textarea></div>
+        <button class="btn btn-primary" id="lvSubmitBtn" onclick="submitLeave()">Kirim Pengajuan Izin</button>
+      `}
+    </div>`;
+}
+
+function leaveFormNavigate(dir) {
+  leaveFormMonth += dir;
+  if (leaveFormMonth > 11) { leaveFormMonth = 0; leaveFormYear++; }
+  if (leaveFormMonth < 0) { leaveFormMonth = 11; leaveFormYear--; }
+  document.getElementById('mainContent').innerHTML = empLeaveForm();
+}
+
+function pickLeaveDay(d, isAllowed) {
+  if (!isAllowed) return;
+  const idx = selectedLeaveDays.indexOf(d);
+  if (idx >= 0) selectedLeaveDays.splice(idx, 1);
+  else selectedLeaveDays.push(d);
+  document.getElementById(`calday-${d}`).classList.toggle('selected');
+  document.getElementById('lvSelectedDisplay').value = selectedLeaveDays.sort((a,b)=>a-b).join(', ') || '';
+}
+
+async function submitLeave() {
+  if (selectedLeaveDays.length === 0) { alert('Pilih minimal 1 tanggal!'); return; }
+  const reason = document.getElementById('lvReason').value.trim();
+
+  // check quota warning (informational; admin still must approve)
+  const calEntry = getCalendarEntry(leaveFormMonth, leaveFormYear);
+  const allowedDays = calEntry ? calEntry.allowedDays : [];
+  const empLeavesThisMonth = CACHE.leaves.filter(l => l.empId === currentUser.id && l.month === leaveFormMonth && l.year === leaveFormYear);
+  const daysAlreadyTaken = empLeavesThisMonth.flatMap(l => l.dayNumbers || []).length;
+  const emp = getEmp(currentUser.id);
+  const freeQuota = emp ? (emp.freeLeaveDays || 0) : 0;
+
+  if (daysAlreadyTaken >= freeQuota && freeQuota > 0) {
+    if (!confirm(`Jatah cuti tanpa potong gaji kamu bulan ini sudah maksimal (${freeQuota} hari). Pengajuan ini akan memotong gaji. Lanjutkan?`)) return;
+  }
+  if (daysAlreadyTaken + selectedLeaveDays.length > freeQuota) {
+    const sisa = Math.max(0, freeQuota - daysAlreadyTaken);
+    if (!confirm(`Dari ${selectedLeaveDays.length} hari yang dipilih, hanya ${sisa} hari yang masih gratis. Sisanya akan memotong gaji. Lanjutkan?`)) return;
+  }
+
+  const dates = selectedLeaveDays.sort((a,b)=>a-b).map(d => `${d} ${monthName(leaveFormMonth)} ${leaveFormYear}`);
+  const btn = document.getElementById('lvSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Mengirim...';
+  try {
+    const reqId = 'REQ'+Date.now();
+    await Cloud.setDoc('requests', reqId, {
+      id: reqId, empId: currentUser.id, type: 'leave', dates, dayNumbers: selectedLeaveDays.slice(),
+      reason, month: leaveFormMonth, year: leaveFormYear, status: 'pending', createdAt: today()
+    });
+    await refreshCache();
+    alert('Pengajuan izin berhasil dikirim! Tunggu approval dari admin.');
+    activeTab = 'myrequests';
+    renderEmployeeApp();
+  } catch(e) {
+    alert('Gagal kirim: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Kirim Pengajuan Izin';
+  }
+}
+
+function empLoanForm() {
+  return `
+    <div class="section-title" style="margin-bottom:14px">Ajukan Pinjaman</div>
+    <div class="card">
+      <div class="field"><label>Jumlah Pinjaman (Rp)</label><input type="number" id="lnAmount" placeholder="500000"></div>
+      <div class="field"><label>Cicilan per Bulan (Rp)</label><input type="number" id="lnInstall" placeholder="100000"></div>
+      <div class="field"><label>Alasan Pinjaman</label><textarea id="lnReason" placeholder="Kebutuhan mendesak, dll"></textarea></div>
+      <button class="btn btn-primary" id="lnSubmitBtn" onclick="submitLoan()">Kirim Pengajuan Pinjaman</button>
+    </div>`;
+}
+
+async function submitLoan() {
+  const amount = parseInt(document.getElementById('lnAmount').value) || 0;
+  const installment = parseInt(document.getElementById('lnInstall').value) || 0;
+  const reason = document.getElementById('lnReason').value.trim();
+  if (!amount || !installment) { alert('Isi jumlah dan cicilan!'); return; }
+  if (installment > amount) { alert('Cicilan tidak boleh lebih besar dari pinjaman!'); return; }
+  const now = new Date();
+  const btn = document.getElementById('lnSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Mengirim...';
+  try {
+    const reqId = 'REQ'+Date.now();
+    await Cloud.setDoc('requests', reqId, {
+      id: reqId, empId: currentUser.id, type: 'loan', amount, installment, reason, status: 'pending', createdAt: today(),
+      requestMonth: now.getMonth(), requestYear: now.getFullYear()
+    });
+    await refreshCache();
+    alert('Pengajuan pinjaman berhasil dikirim! Tunggu approval dari admin.');
+    activeTab = 'myrequests';
+    renderEmployeeApp();
+  } catch(e) {
+    alert('Gagal kirim: ' + e.message);
+    btn.disabled = false; btn.textContent = 'Kirim Pengajuan Pinjaman';
+  }
+}
+
+function empMyRequests() {
+  const reqs = CACHE.requests.filter(r=>r.empId===currentUser.id);
+  return `
+    <div class="section-title" style="margin-bottom:14px">Riwayat Pengajuan Saya</div>
+    ${reqs.length === 0 ? `<div class="card"><div class="empty">Belum ada pengajuan.</div></div>` :
+      [...reqs].reverse().map(r => {
+        const isLeave = r.type === 'leave';
+        const detail = isLeave ? `Tanggal: ${r.dates?r.dates.join(', '):'-'}` : `Pinjam: ${fmtRp(r.amount)} · Cicilan: ${fmtRp(r.installment)}/bln`;
+        return `<div class="req-item">
+          <div class="req-top">
+            <div>
+              <div class="req-type">${isLeave?'📅 Izin':'💸 Pinjaman'}</div>
+              <div class="req-detail">${detail}</div>
+              <div class="req-detail">Alasan: ${r.reason||'-'}</div>
+              <div class="req-detail" style="margin-top:2px;font-size:11px;color:var(--muted)">${r.createdAt||''}</div>
+            </div>
+            <span class="badge badge-${r.status}">${labelStatus(r.status)}</span>
+          </div>
+        </div>`;
+      }).join('')
+    }`;
+}
+
+function empMySlip() {
+  const emp = getEmp(currentUser.id);
+  if (!emp) return `<div class="card"><div class="empty">Data tidak ditemukan.</div></div>`;
+  const now = new Date();
+  return `
+    <div class="section-title" style="margin-bottom:14px">Slip Gaji Saya</div>
+    <div class="card">
+      <div class="field"><label>Pilih Bulan</label>
+        <select id="mySlipMonth" onchange="updateMySlip()">${Array.from({length:12},(_,i)=>`<option value="${i}" ${i===now.getMonth()?'selected':''}>${monthName(i)}</option>`).join('')}</select>
+      </div>
+      <button class="btn btn-primary" onclick="viewPayslipDetail('${currentUser.id}', document.getElementById('mySlipMonth').value, ${now.getFullYear()})">📄 Lihat Slip Gaji Lengkap</button>
+    </div>
+    <div class="notice">Slip gaji bisa kamu screenshot untuk disimpan sebagai catatan pribadi.</div>`;
+}
+
+// ========================
+// PAYSLIP DETAIL PAGE (downloadable/screenshot view)
+// ========================
+function viewPayslipDetail(empId, month, year) {
+  month = parseInt(month); year = parseInt(year);
+  const emp = getEmp(empId);
+  if (!emp) return;
+  const s = generateSlip(emp, month, year);
+
+  document.getElementById('mainContent').innerHTML = `
+    <button class="btn btn-ghost btn-sm" style="margin-bottom:14px" onclick="renderApp()">‹ Kembali</button>
+    <div class="payslip-page">
+      <div class="ps-header">
+        <div class="ps-brand">SUMBER RASA</div>
+        <div class="ps-sub">Slip Gaji Karyawan</div>
+        <div class="ps-title">${monthName(month)} ${year}</div>
+      </div>
+      <div class="ps-row"><span class="ps-label">Nama</span><span><b>${s.name}</b></span></div>
+      <div class="ps-row"><span class="ps-label">ID Karyawan</span><span>${s.empId}</span></div>
+      <div class="ps-row"><span class="ps-label">Gaji per Hari</span><span>${fmtRp(s.dailyWage)}</span></div>
+      <div class="ps-row"><span class="ps-label">Total Hari di Bulan</span><span>${s.totalDaysInMonth} hari</span></div>
+      <div class="ps-row"><span class="ps-label">Hari Izin (gratis / potong)</span><span>${s.freeDaysUsed} / ${s.paidDeductDays}</span></div>
+      <div class="ps-row"><span class="ps-label">Hari Kerja Aktual</span><span><b>${s.hariKerjaAktual} hari</b></span></div>
+      <div class="ps-row"><span class="ps-label">Gaji Kotor</span><span>${fmtRp(s.gajiKotor)}</span></div>
+      ${s.totalBonus > 0 ? `<div class="ps-row"><span class="ps-label">Bonus${s.bonuses[0]&&s.bonuses[0].note ? ' ('+s.bonuses.map(b=>b.note).join(', ')+')' : ''}</span><span class="pos">+ ${fmtRp(s.totalBonus)}</span></div>` : ''}
+      ${s.instDeduct > 0 ? `<div class="ps-row"><span class="ps-label">Cicilan Wajib</span><span class="neg">- ${fmtRp(s.instDeduct)}</span></div>` : ''}
+      ${s.loanDeduct > 0 ? `<div class="ps-row"><span class="ps-label">Pinjaman Bulan Berjalan</span><span class="neg">- ${fmtRp(s.loanDeduct)}</span></div>` : ''}
+      <div class="ps-row total"><span>Gaji Bersih (Take Home)</span><span>${fmtRp(s.take)}</span></div>
+      ${s.leaveDates.length > 0 ? `<div style="margin-top:14px;font-size:12px;color:#6b7280">Tanggal izin: ${s.leaveDates.join(', ')}</div>` : ''}
+      <div class="ps-footer">Slip ini digenerate otomatis oleh sistem SR HR · ${today()}<br>Dapat di-screenshot sebagai bukti / catatan pribadi.</div>
+    </div>`;
+}
+
+// ========================
+// MODAL HELPERS
+// ========================
+function showModal(title, body) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = body;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() { document.getElementById('modalOverlay').classList.remove('open'); }
+document.getElementById('modalOverlay').addEventListener('click', e => { if (e.target === document.getElementById('modalOverlay')) closeModal(); });
+
+// ========================
+// UTILS
+// ========================
+function fmtRp(n) { return 'Rp ' + (n||0).toLocaleString('id-ID'); }
+function today() { return new Date().toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}); }
+function bulanLabel() { return new Date().toLocaleDateString('id-ID',{month:'long',year:'numeric'}); }
+function monthName(m) { return ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][m]; }
+function labelStatus(s) { return {pending:'Menunggu',approved:'Disetujui',rejected:'Ditolak'}[s] || s; }
+function getEmp(id) { return CACHE.employees.find(e=>e.id===id); }
+</script>
+</body>
+</html>
